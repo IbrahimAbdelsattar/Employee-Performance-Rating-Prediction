@@ -1,127 +1,111 @@
 import streamlit as st
 import pickle
 import numpy as np
-import pandas as pd
-from PIL import Image
-from streamlit_option_menu import option_menu
 
 # ==============================
-# Load Model
+# Load Trained XGBoost Model
 # ==============================
 with open("xgb_employee_performance.pkl", "rb") as f:
     model_xgb = pickle.load(f)
 
 # ==============================
-# App Configuration
+# Streamlit Page Configuration
 # ==============================
 st.set_page_config(
     page_title="Employee Performance Prediction",
     page_icon="🧠",
-    layout="centered",
-    initial_sidebar_state="expanded",
+    layout="wide"
 )
 
 # ==============================
-# Sidebar Menu
+# App Header
 # ==============================
-with st.sidebar:
-    selected = option_menu(
-        "Employee Performance App",
-        ["🏠 Home", "📊 Prediction", "ℹ️ About"],
-        icons=["house", "bar-chart", "info-circle"],
-        menu_icon="cast",
-        default_index=0,
-    )
+st.title("🧠 Employee Performance Prediction System")
+st.markdown("""
+This app uses a trained **XGBoost** model to predict an employee's performance rating  
+based on their role, experience, and employment status.
+""")
+st.divider()
 
 # ==============================
-# Home Page
+# Input Form
 # ==============================
-if selected == "🏠 Home":
-    st.title("🧠 Employee Performance Prediction System")
-    st.write("""
-    Welcome to the **Employee Performance Prediction App** built using **Machine Learning (XGBoost)** 🚀.
+st.header("📊 Enter Employee Details")
 
-    This app allows you to input employee information and get a predicted **performance rating**.
-    """)
-    st.image("https://cdn-icons-png.flaticon.com/512/2881/2881142.png", width=250)
-    st.markdown("---")
-    st.markdown("👨‍💼 **Created by Neuronix AI Solutions**")
-    st.caption("Team Leader: Ibrahim Abdelsattar")
+col1, col2 = st.columns(2)
 
-# ==============================
-# Prediction Page
-# ==============================
-elif selected == "📊 Prediction":
-    st.title("📈 Predict Employee Performance")
-    st.markdown("Fill in the details below to get the predicted performance rating:")
+with col1:
+    department = st.selectbox("Department", [
+        "IT", "Sales", "Operations", "Marketing", "Finance", "HR", "R&D"
+    ])
 
-    # Input columns
-    col1, col2 = st.columns(2)
+    job_title = st.selectbox("Job Title", [
+        "Software Engineer", "Sales Executive", "Operations Executive", "Data Analyst",
+        "Marketing Executive", "Account Manager", "Accountant", "DevOps Engineer",
+        "Logistics Coordinator", "HR Executive", "SEO Specialist",
+        "Business Development Manager", "IT Manager", "Financial Analyst",
+        "Research Scientist", "Talent Acquisition Specialist", "Supply Chain Manager",
+        "Content Strategist", "CTO", "Product Developer", "Finance Manager",
+        "HR Manager", "Sales Director", "Operations Director", "Lab Technician",
+        "Brand Manager", "CFO", "HR Director", "Innovation Manager"
+    ])
 
-    with col1:
-        department = st.selectbox("Department", ["HR", "IT", "Finance", "Marketing", "Sales"])
-        job_title = st.selectbox("Job Title", ["Manager", "Executive", "Analyst", "Developer", "Assistant"])
-        location = st.selectbox("Location", ["Cairo", "Alexandria", "Remote", "Giza"])
+    location = st.text_input("Location (e.g., Lake Michael, Congo)", placeholder="Enter employee location")
 
-    with col2:
-        experience_years = st.number_input("Experience (Years)", min_value=0, max_value=40, step=1)
-        status = st.selectbox("Status", ["Active", "Resigned", "Terminated"])
-        work_mode = st.selectbox("Work Mode", ["On-site", "Hybrid", "Remote"])
-        salary_inr = st.number_input("Salary (INR)", min_value=5000, max_value=300000, step=1000)
-
-    st.markdown("---")
-    predict_btn = st.button("🚀 Predict Performance")
-
-    if predict_btn:
-        # Manual label encoding (same order as training)
-        dept_dict = {"HR": 0, "IT": 1, "Finance": 2, "Marketing": 3, "Sales": 4}
-        job_dict = {"Manager": 0, "Executive": 1, "Analyst": 2, "Developer": 3, "Assistant": 4}
-        loc_dict = {"Cairo": 0, "Alexandria": 1, "Remote": 2, "Giza": 3}
-        status_dict = {"Active": 0, "Resigned": 1, "Terminated": 2}
-        mode_dict = {"On-site": 0, "Hybrid": 1, "Remote": 2}
-
-        input_data = np.array([[
-            dept_dict[department],
-            job_dict[job_title],
-            loc_dict[location],
-            experience_years,
-            status_dict[status],
-            mode_dict[work_mode],
-            salary_inr
-        ]])
-
-        prediction = model_xgb.predict(input_data)[0]
-        st.success(f"✅ Predicted Employee Performance Rating: **{int(prediction)} / 5**")
-
-        # Interpretation
-        if prediction >= 4:
-            st.markdown("💪 This employee is **High Performing** and likely contributes strongly to the team.")
-        elif prediction >= 3:
-            st.markdown("🙂 This employee shows **Good Performance** with room for improvement.")
-        else:
-            st.markdown("⚠️ This employee might need **training or performance improvement plans**.")
+with col2:
+    experience_years = st.number_input("Experience (Years)", min_value=0, max_value=40, step=1)
+    status = st.selectbox("Status", ["Active", "Resigned", "Retired", "Terminated"])
+    work_mode = st.selectbox("Work Mode", ["On-site", "Remote"])
+    salary_inr = st.number_input("Salary (INR)", min_value=10000, max_value=3000000, step=1000)
 
 # ==============================
-# About Page
+# Predict Button
 # ==============================
-elif selected == "ℹ️ About":
-    st.title("ℹ️ About the Project")
-    st.write("""
-    This project uses **XGBoost**, a powerful machine learning algorithm,
-    to predict the performance rating of employees based on their data such as:
+st.divider()
+if st.button("🚀 Predict Performance"):
+    # Label encoding manually (based on training order)
+    dept_dict = {"IT": 0, "Sales": 1, "Operations": 2, "Marketing": 3, "Finance": 4, "HR": 5, "R&D": 6}
+    job_dict = {
+        "Software Engineer": 0, "Sales Executive": 1, "Operations Executive": 2, "Data Analyst": 3,
+        "Marketing Executive": 4, "Account Manager": 5, "Accountant": 6, "DevOps Engineer": 7,
+        "Logistics Coordinator": 8, "HR Executive": 9, "SEO Specialist": 10,
+        "Business Development Manager": 11, "IT Manager": 12, "Financial Analyst": 13,
+        "Research Scientist": 14, "Talent Acquisition Specialist": 15, "Supply Chain Manager": 16,
+        "Content Strategist": 17, "CTO": 18, "Product Developer": 19, "Finance Manager": 20,
+        "HR Manager": 21, "Sales Director": 22, "Operations Director": 23, "Lab Technician": 24,
+        "Brand Manager": 25, "CFO": 26, "HR Director": 27, "Innovation Manager": 28
+    }
+    status_dict = {"Active": 0, "Resigned": 1, "Retired": 2, "Terminated": 3}
+    mode_dict = {"On-site": 0, "Remote": 1}
 
-    - Department  
-    - Job Title  
-    - Location  
-    - Experience  
-    - Status  
-    - Work Mode  
-    - Salary  
+    # Location encoded as text length proxy (simplified encoding)
+    location_encoded = len(location)
 
-    ---
-    👨‍💻 **Developed by:** Ibrahim Abdelsattar  
-    🧩 **Team:** Neuronix AI Solutions  
-    🔗 **Field:** AI Engineering
-    """)
+    input_data = np.array([[
+        dept_dict[department],
+        job_dict[job_title],
+        location_encoded,
+        experience_years,
+        status_dict[status],
+        mode_dict[work_mode],
+        salary_inr
+    ]])
 
-    st.image("https://cdn-icons-png.flaticon.com/512/4727/4727253.png", width=250)
+    # Predict
+    prediction = model_xgb.predict(input_data)[0]
+
+    st.success(f"✅ Predicted Employee Performance Rating: **{int(prediction)} / 5**")
+
+    # Interpretation
+    if prediction >= 4:
+        st.info("💪 This employee is **High Performing** and likely a top contributor to the team.")
+    elif prediction >= 3:
+        st.warning("🙂 This employee shows **Good Performance** with room for improvement.")
+    else:
+        st.error("⚠️ This employee might need **training or performance improvement plans**.")
+
+# ==============================
+# Footer
+# ==============================
+st.divider()
+st.caption("Developed by **Ibrahim Abdelsattar** | Neuronix AI Solutions 🧠")
