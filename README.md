@@ -24,6 +24,28 @@ No dependency manifest is committed; the installation command covers the app's i
 
 The application uses manually defined category mappings and encodes location as string length. Verify these transformations against training before interpreting predictions. The notebook reads an external HR dataset from Kaggle. The displayed rating is a model demonstration, not an independently validated assessment of employee performance.
 
+## UML diagrams
+
+### Main workflow
+
+The application uses its own category mappings and location-length transformation before calling the saved XGBoost model.
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant App as Streamlit app.py
+    participant Prep as Form feature mappings
+    participant Model as XGBoost pickle
+    User->>App: Enter employee attributes
+    App->>Prep: Map department, role, status, and work mode
+    Prep->>Prep: Convert location using string length
+    Prep-->>App: Prepared numeric feature row
+    App->>Model: predict
+    Model-->>App: Encoded performance rating
+    App-->>User: Display predicted rating
+    Note over Prep,Model: Keep transformations and rating encoding consistent with training
+```
+
 ## Getting started
 
 ```bash
